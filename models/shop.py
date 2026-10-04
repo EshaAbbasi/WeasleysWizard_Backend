@@ -1,23 +1,27 @@
-# serializers/shop.py
+# models/shop.py
 
-from pydantic import BaseModel
-from typing import Optional, Literal
+from sqlalchemy import Column, Integer, String, Boolean, Enum, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from .base import BaseModel
 
-class ShopCreateSchema(BaseModel):
-    name: str
-    description: Optional[str] = None
+class ShopModel(BaseModel):
 
-class ShopSchema(BaseModel):
-    id: int
-    owner_id: int
-    name: str
-    description: Optional[str] = None
-    status: str
-    is_authorized: bool
+    __tablename__ = "shops"
 
-    class Config:
-        orm_mode = True
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
 
-class ShopStatusUpdateSchema(BaseModel):
-    # Admin uses this to approve or suspend — reusing one route for both
-    status: Literal['approved', 'suspended', 'pending']
+    # Single source of truth for approval state — "pending" until an
+    # admin approves it, "suspended" if an admin removes it later.
+    status = Column(
+        Enum('pending', 'approved', 'suspended', name='shop_status'),
+        default='pending'
+    )
+
+    owner = relationship("UserModel", backref="shops")
+
+    @property
+    def is_authorized(self) -> bool:
+        """A shop can only post products while status == 'approved'."""
+        return self.status == 'approved'
