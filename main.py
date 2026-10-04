@@ -4,6 +4,7 @@ from database import engine
 from models.base import Base
 from models.user import UserModel 
 from models.shop import ShopModel
+from models.product import ProductModel
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -12,6 +13,7 @@ from fastapi import FastAPI
 # Controllers
 from controllers.users import router as UsersRouter
 from controllers.shops import router as ShopsRouter
+from controllers.products import router as ProductsRouter
 # Create all tables that don't exist yet
 Base.metadata.create_all(bind=engine)
 
@@ -33,7 +35,8 @@ app.add_middleware(
 )
 
 app.include_router(UsersRouter, prefix='/api')
-app.include_router(ShopsRouter, prefix='/api')  
+app.include_router(ShopsRouter, prefix='/api') 
+app.include_router(ProductsRouter, prefix='/api') 
 
 @app.get('/health')
 def health_check():
