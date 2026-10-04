@@ -1,7 +1,7 @@
 # tests/conftest.py
 
 import pytest
-from starlette.testclient import TestClient
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 import sys

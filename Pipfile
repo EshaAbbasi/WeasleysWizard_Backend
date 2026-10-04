@@ -14,11 +14,12 @@ psycopg2-binary = "*"
 pyjwt = "*"
 passlib = {extras = ["bcrypt"], version = "*"}
 python-dotenv = "*"
+starlette = "*"
 
 [dev-packages]
-starlette = "*"
 pytest = "*"
 httpx = "*"
+starlette = "*"
 
 [requires]
 python_version = "3.13"
