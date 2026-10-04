@@ -7,6 +7,7 @@ from models.shop import ShopModel
 from models.product import ProductModel
 from models.order import OrderModel          
 from models.item import ItemModel 
+from models.review import ReviewModel
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -17,6 +18,7 @@ from controllers.users import router as UsersRouter
 from controllers.shops import router as ShopsRouter
 from controllers.products import router as ProductsRouter
 from controllers.orders import router as OrdersRouter 
+from controllers.reviews import router as ReviewsRouter
 # Create all tables that don't exist yet
 Base.metadata.create_all(bind=engine)
 
@@ -41,6 +43,7 @@ app.include_router(UsersRouter, prefix='/api')
 app.include_router(ShopsRouter, prefix='/api') 
 app.include_router(ProductsRouter, prefix='/api') 
 app.include_router(OrdersRouter, prefix='/api') 
+app.include_router(ReviewsRouter, prefix='/api')
 
 
 @app.get('/health')
