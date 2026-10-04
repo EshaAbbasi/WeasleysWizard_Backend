@@ -25,7 +25,8 @@ def test_register_user(
     data = response.json()
     assert isinstance(data["token"], str)
     assert data["token"]
-    assert data["message"] == "Login successful"
+    assert data["message"] == "Registration successful"
+    assert data["role"] == "user"  # defaults to "user" when role is omitted
 
     # Verify the user was created in the database
     user = (
@@ -36,6 +37,63 @@ def test_register_user(
     assert user is not None
     assert user.username == user_data["username"]
     assert user.email == user_data["email"]
+    assert user.role == "user"
+
+
+def test_register_user_as_shop_owner(
+    test_app: TestClient,
+    test_db: Session,
+    override_get_db,
+):
+    # A user can explicitly register as "owner" (Shop Owner)
+    user_data = {
+        "username": "ownerTestUser123",
+        "email": "owner-test@example.com",
+        "password": "mys3cretp2ssw0rd",
+        "role": "owner",
+    }
+
+    response = test_app.post("/api/register", json=user_data)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["role"] == "owner"
+
+    user = (
+        test_db.query(UserModel)
+        .filter(UserModel.username == user_data["username"])
+        .first()
+    )
+    assert user.role == "owner"
+
+
+def test_register_user_cannot_self_register_as_admin(
+    test_app: TestClient,
+    test_db: Session,
+    override_get_db,
+):
+    # Registering with role "admin" must be rejected — admins are
+    # created manually via scripts/create_admin.py, never through
+    # public registration.
+    user_data = {
+        "username": "sneakyAdmin123",
+        "email": "sneaky-admin@example.com",
+        "password": "mys3cretp2ssw0rd",
+        "role": "admin",
+    }
+
+    response = test_app.post("/api/register", json=user_data)
+
+    # Pydantic's Literal["user", "owner"] rejects "admin" with a 422
+    assert response.status_code == 422
+
+    # Confirm no user was created in the database
+    user = (
+        test_db.query(UserModel)
+        .filter(UserModel.username == user_data["username"])
+        .first()
+    )
+    assert user is None
 
 
 def test_get_current_user(
@@ -65,3 +123,4 @@ def test_get_current_user(
     assert data["id"] == user.id
     assert data["username"] == user.username
     assert data["email"] == user.email
+    assert data["role"] == "user"  # default role when not specified

@@ -1,6 +1,8 @@
 import os
 from fastapi.middleware.cors import CORSMiddleware
-
+from database import engine 
+from models.base import Base
+from models.user import UserModel 
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -8,6 +10,8 @@ from fastapi import FastAPI
 
 # Controllers
 from controllers.users import router as UsersRouter
+# Create all tables that don't exist yet
+Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
