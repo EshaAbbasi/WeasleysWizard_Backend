@@ -1,12 +1,12 @@
 import os
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine 
+from database import engine
 from models.base import Base
-from models.user import UserModel 
+from models.user import UserModel
 from models.shop import ShopModel
 from models.product import ProductModel
-from models.order import OrderModel          
-from models.item import ItemModel 
+from models.order import OrderModel
+from models.item import ItemModel
 from models.review import ReviewModel
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,15 +17,14 @@ from fastapi import FastAPI
 from controllers.users import router as UsersRouter
 from controllers.shops import router as ShopsRouter
 from controllers.products import router as ProductsRouter
-from controllers.orders import router as OrdersRouter 
+from controllers.orders import router as OrdersRouter
 from controllers.reviews import router as ReviewsRouter
-# Create all tables that don't exist yet
-Base.metadata.create_all(bind=engine)
+from controllers.uploads import router as UploadsRouter
 
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# ✅ Allow your React dev server(s) to call the API
 origins = [
     origin.strip()
     for origin in os.getenv("CORS_ORIGINS", "").split(",")
@@ -34,17 +33,17 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,     # Which sites can call this API
-    allow_methods=["*"],       # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],       # Allow all headers (e.g., Content-Type, Authorization)
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(UsersRouter, prefix='/api')
-app.include_router(ShopsRouter, prefix='/api') 
-app.include_router(ProductsRouter, prefix='/api') 
-app.include_router(OrdersRouter, prefix='/api') 
+app.include_router(ShopsRouter, prefix='/api')
+app.include_router(ProductsRouter, prefix='/api')
+app.include_router(OrdersRouter, prefix='/api')
 app.include_router(ReviewsRouter, prefix='/api')
-
+app.include_router(UploadsRouter, prefix='/api')
 
 @app.get('/health')
 def health_check():

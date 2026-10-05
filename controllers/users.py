@@ -9,6 +9,7 @@ from dependencies.get_current_user import get_current_user
 
 router = APIRouter()
 
+
 @router.post("/register", response_model=UserTokenSchema, status_code=201)
 def create_user(user: UserRegistrationSchema, db: Session = Depends(get_db)):
     existing_user = db.query(UserModel).filter(

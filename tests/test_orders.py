@@ -29,8 +29,8 @@ def _create_shop(test_db: Session, owner, name="Test Shop"):
 def _create_product(test_db: Session, shop, name="Fainting Fancies", price="3.50", stock=10):
     product = ProductModel(
         shop_id=shop.id,
-        name=name,
         category="Skiving Snackboxes",
+        name=name,
         description="Turns you pale.",
         price_gbp=price,
         stock=stock,
@@ -55,32 +55,30 @@ def _setup_shop_with_product(test_db, owner_username="orderShopOwner", price="3.
 # ---------------------------------------------------------------------
 
 def test_customer_can_checkout(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
-    _owner, _shop, product = _setup_shop_with_product(test_db, "checkoutShopOwner")
+    _owner, _shop, product = _setup_shop_with_product(test_db, "checkoutShopOwner", price="5.00")
     customer = _create_user(test_db, "checkoutCustomer", "user")
     headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
 
     response = test_app.post(
         "/api/orders",
-        json={"items": [{"product_id": product.id, "quantity": 2}]},
+        json={"items": [{"product_id": product.id, "quantity": 1}]},
         headers=headers,
     )
 
     assert response.status_code == 201
     data = response.json()
     assert len(data["items"]) == 1
-    assert data["items"][0]["quantity"] == 2
-    assert float(data["total_gbp"]) == 7.00
+    assert data["payment_method"] == "Cash on Delivery"
     assert data["status"] == "Owl Post Received"
+    # This is their first order, so the 15% first-order discount applies automatically
+    assert float(data["total_gbp"]) == 4.25
+    assert data["coupon_code"] == "FIRST ORDER DISCOUNT"
 
 
 def test_checkout_reduces_stock(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "stockReduceOwner", stock=10)
     customer = _create_user(test_db, "stockReduceCustomer", "user")
@@ -97,9 +95,7 @@ def test_checkout_reduces_stock(
 
 
 def test_checkout_blocked_when_quantity_exceeds_stock(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "overstockOwner", stock=2)
     customer = _create_user(test_db, "overstockCustomer", "user")
@@ -112,16 +108,12 @@ def test_checkout_blocked_when_quantity_exceeds_stock(
     )
 
     assert response.status_code == 400
-
-    # Stock must be unchanged since the order was rejected
     product_response = test_app.get(f"/api/products/{product.id}")
     assert product_response.json()["stock"] == 2
 
 
 def test_checkout_fails_with_empty_cart(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     customer = _create_user(test_db, "emptyCartCustomer", "user")
     headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
@@ -132,9 +124,7 @@ def test_checkout_fails_with_empty_cart(
 
 
 def test_checkout_fails_for_nonexistent_product(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     customer = _create_user(test_db, "badProductCustomer", "user")
     headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
@@ -149,39 +139,32 @@ def test_checkout_fails_for_nonexistent_product(
 
 
 # ---------------------------------------------------------------------
-# Coupons
+# Discount rules
 # ---------------------------------------------------------------------
 
-def test_checkout_applies_valid_coupon(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+def test_public_coupon_code_applies(
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
-    _owner, _shop, product = _setup_shop_with_product(
-        test_db, "couponOwner", price="10.00", stock=10
-    )
+    _owner, _shop, product = _setup_shop_with_product(test_db, "couponOwner", price="10.00", stock=10)
     customer = _create_user(test_db, "couponCustomer", "user")
     headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
 
     response = test_app.post(
         "/api/orders",
-        json={
-            "items": [{"product_id": product.id, "quantity": 1}],
-            "coupon_code": "DIAGONALLEY",
-        },
+        json={"items": [{"product_id": product.id, "quantity": 1}], "coupon_code": "DIAGONALLEY"},
         headers=headers,
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["coupon_code"] == "DIAGONALLEY"
-    assert float(data["total_gbp"]) == 9.00  # 10% off 10.00
+    # Their first order is also eligible for 15% off, which beats the 10% coupon,
+    # so the best discount (first-order) is the one actually applied.
+    assert float(data["total_gbp"]) == 8.50
+    assert data["coupon_code"] == "FIRST ORDER DISCOUNT"
 
 
-def test_checkout_rejects_invalid_coupon(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+def test_invalid_coupon_code_rejected(
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "badCouponOwner")
     customer = _create_user(test_db, "badCouponCustomer", "user")
@@ -189,14 +172,74 @@ def test_checkout_rejects_invalid_coupon(
 
     response = test_app.post(
         "/api/orders",
-        json={
-            "items": [{"product_id": product.id, "quantity": 1}],
-            "coupon_code": "NOTREAL",
-        },
+        json={"items": [{"product_id": product.id, "quantity": 1}], "coupon_code": "NOTREAL"},
         headers=headers,
     )
 
     assert response.status_code == 400
+
+
+def test_first_order_gets_automatic_discount_no_code_needed(
+    test_app: TestClient, test_db: Session, override_get_db,
+):
+    _owner, _shop, product = _setup_shop_with_product(test_db, "firstOrderOwner", price="10.00")
+    customer = _create_user(test_db, "firstOrderCustomer", "user")
+    headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
+
+    response = test_app.post(
+        "/api/orders",
+        json={"items": [{"product_id": product.id, "quantity": 1}]},  # no coupon_code at all
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    assert float(response.json()["total_gbp"]) == 8.50  # 15% off automatically
+
+
+def test_second_order_does_not_get_first_order_discount(
+    test_app: TestClient, test_db: Session, override_get_db,
+):
+    _owner, _shop, product = _setup_shop_with_product(test_db, "secondOrderOwner", price="5.00", stock=20)
+    customer = _create_user(test_db, "secondOrderCustomer", "user")
+    headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
+
+    # First order — gets the discount
+    test_app.post(
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=headers
+    )
+
+    # Second order — should NOT get the first-order discount, and £5 is below
+    # the bulk-order threshold, so no discount applies at all
+    second = test_app.post(
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=headers
+    )
+
+    assert second.status_code == 201
+    assert float(second.json()["total_gbp"]) == 5.00
+    assert second.json()["coupon_code"] is None
+
+
+def test_bulk_order_gets_automatic_discount(
+    test_app: TestClient, test_db: Session, override_get_db,
+):
+    _owner, _shop, product = _setup_shop_with_product(test_db, "bulkOrderOwner", price="5.00", stock=20)
+    customer = _create_user(test_db, "bulkOrderCustomer", "user")
+    headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
+
+    # Use up the first-order discount first with a tiny order below the bulk threshold
+    test_app.post(
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=headers
+    )
+
+    # Now place a second order of £25 (quantity 5 x £5) — above the £20 bulk threshold
+    response = test_app.post(
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 5}]}, headers=headers
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert float(data["total_gbp"]) == 22.50  # 10% off £25
+    assert data["coupon_code"] == "BULK ORDER DISCOUNT"
 
 
 # ---------------------------------------------------------------------
@@ -204,9 +247,7 @@ def test_checkout_rejects_invalid_coupon(
 # ---------------------------------------------------------------------
 
 def test_customer_only_sees_own_orders(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "visOwner1")
 
@@ -222,13 +263,11 @@ def test_customer_only_sees_own_orders(
     response = test_app.get("/api/orders", headers=headers_b)
 
     assert response.status_code == 200
-    assert response.json() == []  # customer B has no orders of their own
+    assert response.json() == []
 
 
 def test_shop_owner_sees_orders_containing_their_products(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     owner, _shop, product = _setup_shop_with_product(test_db, "shopOrdersOwner")
     owner_headers = login(test_app, owner.username, "mys3cretp2ssw0rd")
@@ -236,9 +275,7 @@ def test_shop_owner_sees_orders_containing_their_products(
     customer = _create_user(test_db, "shopOrdersCustomer", "user")
     customer_headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
     test_app.post(
-        "/api/orders",
-        json={"items": [{"product_id": product.id, "quantity": 1}]},
-        headers=customer_headers,
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=customer_headers
     )
 
     response = test_app.get("/api/shops/mine/orders", headers=owner_headers)
@@ -248,17 +285,13 @@ def test_shop_owner_sees_orders_containing_their_products(
 
 
 def test_admin_sees_all_orders(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "adminOrdersOwner")
     customer = _create_user(test_db, "adminOrdersCustomer", "user")
     customer_headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
     test_app.post(
-        "/api/orders",
-        json={"items": [{"product_id": product.id, "quantity": 1}]},
-        headers=customer_headers,
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=customer_headers
     )
 
     admin = _create_user(test_db, "adminOrdersAdmin", "admin")
@@ -275,9 +308,7 @@ def test_admin_sees_all_orders(
 # ---------------------------------------------------------------------
 
 def test_owner_can_update_status_of_order_with_their_product(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     owner, _shop, product = _setup_shop_with_product(test_db, "statusOwner1")
     owner_headers = login(test_app, owner.username, "mys3cretp2ssw0rd")
@@ -285,9 +316,7 @@ def test_owner_can_update_status_of_order_with_their_product(
     customer = _create_user(test_db, "statusCustomer1", "user")
     customer_headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
     order_response = test_app.post(
-        "/api/orders",
-        json={"items": [{"product_id": product.id, "quantity": 1}]},
-        headers=customer_headers,
+        "/api/orders", json={"items": [{"product_id": product.id, "quantity": 1}]}, headers=customer_headers
     )
     order_id = order_response.json()["id"]
 
@@ -302,9 +331,7 @@ def test_owner_can_update_status_of_order_with_their_product(
 
 
 def test_owner_cannot_update_status_of_unrelated_order(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner_a, _shop_a, product_a = _setup_shop_with_product(test_db, "statusOwnerA")
     owner_b, _shop_b, _product_b = _setup_shop_with_product(test_db, "statusOwnerB")
@@ -313,26 +340,19 @@ def test_owner_cannot_update_status_of_unrelated_order(
     customer = _create_user(test_db, "statusCustomer2", "user")
     customer_headers = login(test_app, customer.username, "mys3cretp2ssw0rd")
     order_response = test_app.post(
-        "/api/orders",
-        json={"items": [{"product_id": product_a.id, "quantity": 1}]},
-        headers=customer_headers,
+        "/api/orders", json={"items": [{"product_id": product_a.id, "quantity": 1}]}, headers=customer_headers
     )
     order_id = order_response.json()["id"]
 
-    # Owner B's shop has nothing to do with this order
     response = test_app.put(
-        f"/api/orders/{order_id}/status",
-        json={"status": "Delivered"},
-        headers=owner_b_headers,
+        f"/api/orders/{order_id}/status", json={"status": "Delivered"}, headers=owner_b_headers,
     )
 
     assert response.status_code == 403
 
 
 def test_customer_cannot_view_others_order_by_id(
-    test_app: TestClient,
-    test_db: Session,
-    override_get_db,
+    test_app: TestClient, test_db: Session, override_get_db,
 ):
     _owner, _shop, product = _setup_shop_with_product(test_db, "privateOrderOwner")
 

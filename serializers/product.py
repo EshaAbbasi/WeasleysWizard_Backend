@@ -1,12 +1,20 @@
 # serializers/product.py
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
 from decimal import Decimal
+
+ProductCategory = Literal[
+    "Trunk Station",
+    "Wands",
+    "Robes & Clothing",
+    "Gifts",
+    "Home and Accessories",
+]
 
 class ProductCreateSchema(BaseModel):
     name: str
-    category: str
+    category: ProductCategory
     description: Optional[str] = None
     price_gbp: Decimal
     stock: int = 0
@@ -14,9 +22,8 @@ class ProductCreateSchema(BaseModel):
     is_banned_at_hogwarts: bool = False
 
 class ProductUpdateSchema(BaseModel):
-    # Same fields, but all optional — partial updates allowed
     name: Optional[str] = None
-    category: Optional[str] = None
+    category: Optional[ProductCategory] = None
     description: Optional[str] = None
     price_gbp: Optional[Decimal] = None
     stock: Optional[int] = None
@@ -26,8 +33,8 @@ class ProductUpdateSchema(BaseModel):
 class ProductSchema(BaseModel):
     id: int
     shop_id: int
-    name: str
     category: str
+    name: str
     description: Optional[str] = None
     price_gbp: Decimal
     stock: int

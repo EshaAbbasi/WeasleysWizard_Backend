@@ -15,11 +15,40 @@ from dependencies.require_role import require_role
 
 router = APIRouter()
 
-# Coupons — hardcoded for MVP, as discussed (no coupons table yet)
-VALID_COUPONS = {
-    "DIAGONALLEY": 10,        # 10% off
-    "WEASLEYISOURKING": 15,   # 15% off
+# Rule 1 — a public, reusable coupon code
+PUBLIC_COUPONS = {
+    "DIAGONALLEY": 10,  # 10% off
 }
+
+# Rule 3 — automatic discount for a big order
+BULK_ORDER_THRESHOLD = Decimal("20.00")
+BULK_ORDER_DISCOUNT_PERCENT = 10
+
+# Rule 2 — automatic discount on a customer's very first order
+FIRST_ORDER_DISCOUNT_PERCENT = 15
+
+
+def _best_discount_percent(db: Session, user: UserModel, coupon_code: str | None, total: Decimal) -> tuple[int, str | None]:
+    """Returns (discount_percent, label_to_store_as_coupon_code)."""
+    candidates = []  # list of (percent, label)
+
+    if coupon_code:
+        if coupon_code not in PUBLIC_COUPONS:
+            raise HTTPException(status_code=400, detail="Invalid coupon code")
+        candidates.append((PUBLIC_COUPONS[coupon_code], coupon_code))
+
+    is_first_order = db.query(OrderModel).filter(OrderModel.user_id == user.id).count() == 0
+    if is_first_order:
+        candidates.append((FIRST_ORDER_DISCOUNT_PERCENT, "FIRST ORDER DISCOUNT"))
+
+    if total >= BULK_ORDER_THRESHOLD:
+        candidates.append((BULK_ORDER_DISCOUNT_PERCENT, "BULK ORDER DISCOUNT"))
+
+    if not candidates:
+        return 0, None
+
+    # Pick whichever discount is biggest — no stacking
+    return max(candidates, key=lambda c: c[0])
 
 
 @router.post("/orders", response_model=OrderSchema, status_code=201)
@@ -34,7 +63,6 @@ def checkout(
     total = Decimal("0.00")
     order_items_to_create = []
 
-    # Step 1: validate every product and stock BEFORE creating anything
     for cart_item in order.items:
         product = db.query(ProductModel).filter(ProductModel.id == cart_item.product_id).first()
         if not product:
@@ -49,31 +77,23 @@ def checkout(
                 detail=f"Only {product.stock} left of '{product.name}' — requested {cart_item.quantity}"
             )
 
-        line_total = product.price_gbp * cart_item.quantity
-        total += line_total
-
+        total += product.price_gbp * cart_item.quantity
         order_items_to_create.append((product, cart_item.quantity))
 
-    # Step 2: apply coupon, if provided
-    coupon_code = None
-    if order.coupon_code:
-        if order.coupon_code not in VALID_COUPONS:
-            raise HTTPException(status_code=400, detail="Invalid coupon code")
-        discount_percent = VALID_COUPONS[order.coupon_code]
+    discount_percent, applied_label = _best_discount_percent(db, user, order.coupon_code, total)
+    if discount_percent:
         total = total - (total * Decimal(discount_percent) / Decimal(100))
-        coupon_code = order.coupon_code
 
-    # Step 3: create the order
     new_order = OrderModel(
         user_id=user.id,
         total_gbp=round(total, 2),
-        coupon_code=coupon_code,
+        coupon_code=applied_label,
+        payment_method="Cash on Delivery",
         status="Owl Post Received",
     )
     db.add(new_order)
-    db.flush()  # gets new_order.id without a full commit yet
+    db.flush()
 
-    # Step 4: create each item, and decrement stock
     for product, quantity in order_items_to_create:
         db.add(ItemModel(
             order_id=new_order.id,
@@ -121,7 +141,6 @@ def my_shop_orders(
     if not shop:
         raise HTTPException(status_code=404, detail="You don't have a shop yet")
 
-    # Orders that contain at least one of this shop's products
     return (
         db.query(OrderModel)
         .join(ItemModel, ItemModel.order_id == OrderModel.id)
@@ -152,7 +171,6 @@ def update_order_status(
         raise HTTPException(status_code=404, detail="Order not found")
 
     if user.role == "owner":
-        # Confirm this order actually contains one of the owner's products
         shop = db.query(ShopModel).filter(ShopModel.owner_id == user.id).first()
         owns_item_in_order = (
             db.query(ItemModel)
