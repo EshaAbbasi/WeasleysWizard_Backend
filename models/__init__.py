@@ -1,8 +1,11 @@
 from .base import BaseModel
 
-# Import submodules so their classes register with the mapper registry.
-# Import modules, not classes, to avoid circular imports between request/property/notification.
+# Import model modules so all tables are registered for Alembic autogeneration.
 from . import user
-# add future models here as needed
+from . import shop
+from . import product
+from . import order
+from . import item
+from . import review
 
 __all__ = ["BaseModel"]
