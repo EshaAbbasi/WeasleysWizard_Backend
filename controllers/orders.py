@@ -185,3 +185,21 @@ def update_order_status(
     db.commit()
     db.refresh(order)
     return order
+@router.get("/shops/mine/stats")
+def shop_sales_stats(
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_role("owner")),
+):
+    shop = db.query(ShopModel).filter(ShopModel.owner_id == user.id).first()
+    if not shop:
+        raise HTTPException(status_code=404, detail="You don't have a shop yet")
+ 
+    results = (
+        db.query(ProductModel.name, func.sum(ItemModel.quantity).label("units_sold"))
+        .join(ItemModel, ItemModel.product_id == ProductModel.id)
+        .filter(ProductModel.shop_id == shop.id)
+        .group_by(ProductModel.name)
+        .all()
+    )
+    return [{"name": name, "units_sold": int(units_sold)} for name, units_sold in results]
+ 

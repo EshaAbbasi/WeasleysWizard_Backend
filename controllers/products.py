@@ -123,3 +123,10 @@ def list_my_products(
     shop = _get_my_shop_or_404(db, user)
     return db.query(ProductModel).filter(ProductModel.shop_id == shop.id).all()
  
+
+@router.get("/admin/products", response_model=list[ProductSchema])
+def list_all_products(
+    db: Session = Depends(get_db),
+    admin: UserModel = Depends(require_role("admin")),
+):
+    return db.query(ProductModel).all()
