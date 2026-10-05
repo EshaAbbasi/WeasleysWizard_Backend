@@ -109,3 +109,17 @@ def delete_product(
     db.delete(product)
     db.commit()
     return None
+
+
+
+# It lets a shop owner see ALL of their own products, even while their shop
+# is still pending — the public GET /products route only shows approved shops.
+ 
+@router.get("/products/mine", response_model=list[ProductSchema])
+def list_my_products(
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_role("owner")),
+):
+    shop = _get_my_shop_or_404(db, user)
+    return db.query(ProductModel).filter(ProductModel.shop_id == shop.id).all()
+ 
