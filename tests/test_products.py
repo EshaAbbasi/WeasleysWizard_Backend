@@ -47,7 +47,7 @@ def _create_shop(test_db: Session, owner: UserModel, status="pending", name="Tes
 def _sample_product_payload(name="Fainting Fancies"):
     return {
         "name": name,
-        "category": "Skiving Snackboxes",
+        "category": "Gifts",
         "description": "Turns you pale and makes you faint on command.",
         "price_gbp": "3.50",
         "stock": 10,
@@ -97,7 +97,7 @@ def test_owner_can_add_product_once_shop_approved(
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Fainting Fancies"
-    assert data["category"] == "Skiving Snackboxes"
+    assert data["category"] == "Gifts"
     assert data["stock"] == 10
 
 

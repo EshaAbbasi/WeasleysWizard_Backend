@@ -30,7 +30,7 @@ def _create_product(test_db: Session, shop, name="Puking Pastilles", price="2.50
     product = ProductModel(
         shop_id=shop.id,
         name=name,
-        category="Skiving Snackboxes",
+        category="Gifts",
         description="Two halves, two effects.",
         price_gbp=price,
         stock=stock,

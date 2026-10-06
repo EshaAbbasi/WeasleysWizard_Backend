@@ -27,18 +27,20 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+cors_from_env = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ORIGIN") or ""
 origins = [
     origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", "").split(",")
+    for origin in cors_from_env.split(",")
     if origin.strip()
 ]
+for local in ("http://localhost:5173", "http://127.0.0.1:5173"):
+    if local not in origins:
+        origins.append(local)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.(vercel\.app|onrender\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models.product import ProductModel
+from models.product import ProductModel, PRODUCT_CATEGORIES
 from models.shop import ShopModel
 from models.user import UserModel
 from serializers.product import ProductCreateSchema, ProductUpdateSchema, ProductSchema
@@ -42,14 +42,38 @@ def create_product(
 
 
 @router.get("/products", response_model=list[ProductSchema])
-def list_products(db: Session = Depends(get_db)):
+def list_products(category: str | None = None, db: Session = Depends(get_db)):
     # Public route — only products from approved shops are shown
-    return (
+    query = (
         db.query(ProductModel)
         .join(ShopModel)
         .filter(ShopModel.status == "approved")
-        .all()
     )
+    if category:
+        query = query.filter(ProductModel.category == category)
+    return query.all()
+
+
+@router.get("/products/categories")
+def list_categories():
+    return list(PRODUCT_CATEGORIES)
+
+
+@router.get("/products/mine", response_model=list[ProductSchema])
+def list_my_products(
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_role("owner")),
+):
+    shop = _get_my_shop_or_404(db, user)
+    return db.query(ProductModel).filter(ProductModel.shop_id == shop.id).all()
+
+
+@router.get("/admin/products", response_model=list[ProductSchema])
+def list_all_products(
+    db: Session = Depends(get_db),
+    admin: UserModel = Depends(require_role("admin")),
+):
+    return db.query(ProductModel).all()
 
 
 @router.get("/products/{product_id}", response_model=ProductSchema)
@@ -109,24 +133,3 @@ def delete_product(
     db.delete(product)
     db.commit()
     return None
-
-
-
-# It lets a shop owner see ALL of their own products, even while their shop
-# is still pending — the public GET /products route only shows approved shops.
- 
-@router.get("/products/mine", response_model=list[ProductSchema])
-def list_my_products(
-    db: Session = Depends(get_db),
-    user: UserModel = Depends(require_role("owner")),
-):
-    shop = _get_my_shop_or_404(db, user)
-    return db.query(ProductModel).filter(ProductModel.shop_id == shop.id).all()
- 
-
-@router.get("/admin/products", response_model=list[ProductSchema])
-def list_all_products(
-    db: Session = Depends(get_db),
-    admin: UserModel = Depends(require_role("admin")),
-):
-    return db.query(ProductModel).all()

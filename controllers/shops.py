@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.shop import ShopModel
 from models.user import UserModel
-from serializers.shop import ShopCreateSchema, ShopSchema, ShopStatusUpdateSchema
+from serializers.shop import (
+    ShopCreateSchema,
+    ShopSchema,
+    ShopStatusUpdateSchema,
+    ShopUpdateSchema,
+    ShopAuthorizeSchema,
+)
 from database import get_db
 from dependencies.get_current_user import get_current_user
 from dependencies.require_role import require_role
@@ -46,6 +52,24 @@ def get_my_shop(
     return shop
 
 
+@router.put("/shops/mine", response_model=ShopSchema)
+def update_my_shop(
+    update: ShopUpdateSchema,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_role("owner")),
+):
+    shop = db.query(ShopModel).filter(ShopModel.owner_id == user.id).first()
+    if not shop:
+        raise HTTPException(status_code=404, detail="You don't have a shop yet")
+
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(shop, field, value)
+
+    db.commit()
+    db.refresh(shop)
+    return shop
+
+
 @router.get("/shops", response_model=list[ShopSchema])
 def list_authorized_shops(db: Session = Depends(get_db)):
     # Public route — customers should only ever see approved shops
@@ -73,6 +97,23 @@ def update_shop_status(
         raise HTTPException(status_code=404, detail="Shop not found")
 
     shop.status = update.status
+    db.commit()
+    db.refresh(shop)
+    return shop
+
+
+@router.put("/admin/shops/{shop_id}/authorize", response_model=ShopSchema)
+def authorize_shop(
+    shop_id: int,
+    update: ShopAuthorizeSchema,
+    db: Session = Depends(get_db),
+    admin: UserModel = Depends(require_role("admin")),
+):
+    shop = db.query(ShopModel).filter(ShopModel.id == shop_id).first()
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    shop.status = "approved" if update.is_authorized else "suspended"
     db.commit()
     db.refresh(shop)
     return shop

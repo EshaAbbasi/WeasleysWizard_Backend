@@ -7,6 +7,13 @@ class ShopCreateSchema(BaseModel):
     name: str
     description: Optional[str] = None
 
+class ShopUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class ShopAuthorizeSchema(BaseModel):
+    is_authorized: bool = True
+
 class ShopSchema(BaseModel):
     id: int
     owner_id: int

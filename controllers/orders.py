@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from decimal import Decimal
 
 from models.order import OrderModel
@@ -9,7 +10,7 @@ from models.item import ItemModel
 from models.product import ProductModel
 from models.shop import ShopModel
 from models.user import UserModel
-from serializers.order import OrderCreateSchema, OrderSchema, OrderStatusUpdateSchema
+from serializers.order import OrderCreateSchema, OrderSchema, OrderStatusUpdateSchema, CouponValidateSchema
 from database import get_db
 from dependencies.require_role import require_role
 
@@ -33,6 +34,7 @@ def _best_discount_percent(db: Session, user: UserModel, coupon_code: str | None
     candidates = []  # list of (percent, label)
 
     if coupon_code:
+        coupon_code = coupon_code.strip().upper()
         if coupon_code not in PUBLIC_COUPONS:
             raise HTTPException(status_code=400, detail="Invalid coupon code")
         candidates.append((PUBLIC_COUPONS[coupon_code], coupon_code))
@@ -49,6 +51,17 @@ def _best_discount_percent(db: Session, user: UserModel, coupon_code: str | None
 
     # Pick whichever discount is biggest — no stacking
     return max(candidates, key=lambda c: c[0])
+
+
+@router.post("/coupons/validate")
+def validate_coupon(
+    body: CouponValidateSchema,
+    user: UserModel = Depends(require_role("user")),
+):
+    code = (body.coupon_code or "").strip().upper()
+    if code not in PUBLIC_COUPONS:
+        raise HTTPException(status_code=400, detail="Invalid coupon code")
+    return {"coupon_code": code, "percent": PUBLIC_COUPONS[code], "valid": True}
 
 
 @router.post("/orders", response_model=OrderSchema, status_code=201)
@@ -88,7 +101,6 @@ def checkout(
         user_id=user.id,
         total_gbp=round(total, 2),
         coupon_code=applied_label,
-        payment_method="Cash on Delivery",
         status="Owl Post Received",
     )
     db.add(new_order)

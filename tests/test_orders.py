@@ -29,7 +29,7 @@ def _create_shop(test_db: Session, owner, name="Test Shop"):
 def _create_product(test_db: Session, shop, name="Fainting Fancies", price="3.50", stock=10):
     product = ProductModel(
         shop_id=shop.id,
-        category="Skiving Snackboxes",
+        category="Gifts",
         name=name,
         description="Turns you pale.",
         price_gbp=price,
