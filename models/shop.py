@@ -22,6 +22,10 @@ class ShopModel(BaseModel):
     owner = relationship("UserModel", backref="shops")
 
     @property
+    def owner_username(self) -> str:
+        return self.owner.username
+
+    @property
     def is_authorized(self) -> bool:
         """A shop can only post products while status == 'approved'."""
         return self.status == 'approved'

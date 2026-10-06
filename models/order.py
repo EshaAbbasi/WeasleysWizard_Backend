@@ -24,5 +24,9 @@ class OrderModel(BaseModel):
     user = relationship("UserModel", backref="orders")
 
     @property
+    def customer_username(self) -> str:
+        return self.user.username
+
+    @property
     def payment_method(self) -> str:
         return "Cash on Delivery"

@@ -1,7 +1,7 @@
 # controllers/orders.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from decimal import Decimal
 
@@ -10,7 +10,13 @@ from models.item import ItemModel
 from models.product import ProductModel
 from models.shop import ShopModel
 from models.user import UserModel
-from serializers.order import OrderCreateSchema, OrderSchema, OrderStatusUpdateSchema, CouponValidateSchema
+from serializers.order import (
+    AdminOrderSchema,
+    OrderCreateSchema,
+    OrderSchema,
+    OrderStatusUpdateSchema,
+    CouponValidateSchema,
+)
 from database import get_db
 from dependencies.require_role import require_role
 
@@ -163,12 +169,12 @@ def my_shop_orders(
     )
 
 
-@router.get("/admin/orders", response_model=list[OrderSchema])
+@router.get("/admin/orders", response_model=list[AdminOrderSchema])
 def all_orders(
     db: Session = Depends(get_db),
     admin: UserModel = Depends(require_role("admin")),
 ):
-    return db.query(OrderModel).all()
+    return db.query(OrderModel).options(joinedload(OrderModel.user)).all()
 
 
 @router.put("/orders/{order_id}/status", response_model=OrderSchema)

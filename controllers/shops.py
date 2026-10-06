@@ -1,12 +1,13 @@
 # controllers/shops.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models.shop import ShopModel
 from models.user import UserModel
 from serializers.shop import (
     ShopCreateSchema,
     ShopSchema,
+    AdminShopSchema,
     ShopStatusUpdateSchema,
     ShopUpdateSchema,
     ShopAuthorizeSchema,
@@ -76,13 +77,13 @@ def list_authorized_shops(db: Session = Depends(get_db)):
     return db.query(ShopModel).filter(ShopModel.status == "approved").all()
 
 
-@router.get("/admin/shops", response_model=list[ShopSchema])
+@router.get("/admin/shops", response_model=list[AdminShopSchema])
 def list_all_shops(
     db: Session = Depends(get_db),
     admin: UserModel = Depends(require_role("admin")),
 ):
     # Admin sees everything, including pending and suspended
-    return db.query(ShopModel).all()
+    return db.query(ShopModel).options(joinedload(ShopModel.owner)).all()
 
 
 @router.put("/admin/shops/{shop_id}/status", response_model=ShopSchema)

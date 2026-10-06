@@ -25,6 +25,9 @@ class ShopSchema(BaseModel):
     class Config:
         orm_mode = True
 
+class AdminShopSchema(ShopSchema):
+    owner_username: str
+
 class ShopStatusUpdateSchema(BaseModel):
     # Admin uses this to approve or suspend — reusing one route for both
     status: Literal['approved', 'suspended', 'pending']

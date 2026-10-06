@@ -28,3 +28,6 @@ class OrderSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+class AdminOrderSchema(OrderSchema):
+    customer_username: str

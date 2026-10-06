@@ -301,6 +301,10 @@ def test_admin_sees_all_orders(
 
     assert response.status_code == 200
     assert len(response.json()) >= 1
+    customer_order = next(
+        order for order in response.json() if order["user_id"] == customer.id
+    )
+    assert customer_order["customer_username"] == customer.username
 
 
 # ---------------------------------------------------------------------

@@ -123,6 +123,11 @@ def test_admin_can_approve_shop(
     assert response.json()["status"] == "approved"
     assert response.json()["is_authorized"] is True
 
+    admin_shops_response = test_app.get("/api/admin/shops", headers=admin_headers)
+    assert admin_shops_response.status_code == 200
+    admin_shop = next(shop for shop in admin_shops_response.json() if shop["id"] == shop_id)
+    assert admin_shop["owner_username"] == owner.username
+
     # Confirm it now appears in the public list
     public_response = test_app.get("/api/shops")
     names = [shop["name"] for shop in public_response.json()]
