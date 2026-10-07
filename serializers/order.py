@@ -27,7 +27,7 @@ class OrderSchema(BaseModel):
     items: List[ItemSchema] = []
 
     class Config:
-        orm_mode = True
+       from_attributes=True
 
 class AdminOrderSchema(OrderSchema):
     customer_username: str

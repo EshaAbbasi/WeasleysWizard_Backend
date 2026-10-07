@@ -42,4 +42,4 @@ class ProductSchema(BaseModel):
     is_banned_at_hogwarts: bool
 
     class Config:
-        orm_mode = True
+        from_attributes=True

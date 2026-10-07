@@ -16,4 +16,4 @@ class ItemSchema(BaseModel):
     price_at_purchase: Decimal
 
     class Config:
-        orm_mode = True
+        from_attributes = True

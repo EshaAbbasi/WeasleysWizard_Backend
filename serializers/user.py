@@ -27,7 +27,7 @@ class UserSchema(BaseModel):
     role: str
 
     class Config:
-        orm_mode = True
+        from_attributes=True
 
 class UserTokenSchema(BaseModel):
     token: str

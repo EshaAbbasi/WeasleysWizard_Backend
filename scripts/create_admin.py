@@ -15,7 +15,7 @@ def create_admin():
         email="admin@wheezes.com",
         role="admin"
     )
-    admin.set_password("ChangeThisPassword123!")
+    admin.set_password("123")
 
     db.add(admin)
     db.commit()

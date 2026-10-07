@@ -26,4 +26,4 @@ class ReviewSchema(BaseModel):
     is_favorite: bool
 
     class Config:
-        orm_mode = True
+       from_attributes=True

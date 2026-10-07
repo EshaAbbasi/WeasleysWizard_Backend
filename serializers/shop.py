@@ -23,8 +23,7 @@ class ShopSchema(BaseModel):
     is_authorized: bool
 
     class Config:
-        orm_mode = True
-
+     from_attributes = True
 class AdminShopSchema(ShopSchema):
     owner_username: str
 
