@@ -134,6 +134,33 @@ def test_admin_can_approve_shop(
     assert "To Be Approved" in names
 
 
+def test_admin_can_reject_shop(
+    test_app: TestClient,
+    test_db: Session,
+    override_get_db,
+):
+    owner = _create_owner(test_db, username="rejectTestOwner")
+    owner_headers = login(test_app, owner.username, "mys3cretp2ssw0rd")
+    create_response = test_app.post(
+        "/api/shops", json={"name": "To Be Rejected"}, headers=owner_headers
+    )
+    shop_id = create_response.json()["id"]
+
+    admin = _create_admin(test_db, username="rejectTestAdmin")
+    admin_headers = login(test_app, admin.username, "mys3cretp2ssw0rd")
+    response = test_app.put(
+        f"/api/admin/shops/{shop_id}/status",
+        json={"status": "rejected"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "rejected"
+    public_response = test_app.get("/api/shops")
+    public_shop_names = [shop["name"] for shop in public_response.json()]
+    assert "To Be Rejected" not in public_shop_names
+
+
 def test_owner_cannot_approve_own_shop(
     test_app: TestClient,
     test_db: Session,

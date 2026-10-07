@@ -1,67 +1,185 @@
-# ⚡ Weasleys' Wizard Wheezes
+# ⚡ Weasleys' Wizard Wheezes ⚡
 
-_A Harry Potter themed e-commerce marketplace_
+### _A Harry Potter themed e-commerce marketplace — for every Harry Potter fan._
 
-## Introduction
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)
 
-Weasleys' Wizard Wheezes is a full-stack marketplace where multiple
-wizarding shop owners sell magical joke-shop products (Skiving Snackboxes,
-Love Potions, Daydream Charms, and more), and customers browse, buy, review,
-and favorite them.
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/eshaabbasi/weasleyswizard_backend?utm_source=readme&utm_medium=badge)
 
-A shop owner can register a shop, but it stays **pending** until the
-platform Admin authorizes it a shop cannot post products before approval.
-Customers browse only authorized shops, add items to a persistent cart,
-check out through a themed mock "Gringotts" payment flow, track orders
-through Owl Post delivery stages, and leave reviews (optionally with their
-own photos). The Admin has platform-wide oversight: authorizing/suspending
-shops and deleting any product directly, for example after a pattern of bad
-reviews.
+[🌐 Live Demo](https://weasleys-wizard-frontend.vercel.app) · [🎨 Front-end](./frontend) · [🧠 Back-end](./backend) · [📋 Planning Materials](./docs/Weasleys_Wizard_Wheezes_Project_Plan.pdf)
 
-**Roles:** Admin, Shop Owner, Customer
-**Stack:** FastAPI (Python) + PostgreSQL on the back end, React on the front
-end, JWT authentication, Cloudinary for image uploads.
+![Weasleys' Wizard Wheezes home page](./assets/screenshot.png)
+
+</div>
 
 ---
 
-## User Stories
+## 📚 Table of Contents
 
-| #    | Role       | Story                                                                                                                                       | Acceptance Criteria                                                       |
-| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| US01 | Customer   | As a customer, I want to register and log in, so that I can save a cart, checkout, and track my own orders.                                 | Register/login returns a JWT; guests cannot checkout or review            |
-| US02 | Customer   | As a customer, I want to browse products from authorized shops only, so that I don't see unapproved or suspended sellers.                   | Product list excludes shops where `is_authorized` is false                |
-| US03 | Customer   | As a customer, I want to filter products by category, so that I can find what I'm looking for quickly.                                      | Category filter returns only matching products                            |
-| US04 | Customer   | As a customer, I want to view multiple images per product, so that I can see the item clearly before buying.                                | Product detail displays all URLs in `image_urls`                          |
-| US05 | Customer   | As a customer, I want to add products to a cart with live stock limits, so that I can't order more than what's in stock.                    | Cart blocks quantity above current stock                                  |
-| US06 | Customer   | As a customer, I want to apply a coupon code at checkout, so that I can get a discount.                                                     | Valid code reduces total; invalid code shows an error                     |
-| US07 | Customer   | As a customer, I want to complete a mock checkout, so that an order is created with my cart contents.                                       | `order` + `order_items` are created; cart clears after success            |
-| US08 | Customer   | As a customer, I want to view my own order history and status, so that I know where my order is.                                            | `GET /orders` returns only the logged-in user's own orders                |
-| US09 | Customer   | As a customer, I want to write a review with a star rating and optional images, so that I can share my experience.                          | Review saved with rating, comment, and `image_urls`; linked to my user id |
-| US10 | Customer   | As a customer, I want to edit or delete my own review, so that I can correct or remove my feedback.                                         | PUT/DELETE blocked unless `review.user_id` matches the logged-in user     |
-| US11 | Customer   | As a customer, I want to mark a product as a favorite, so that I can find it again quickly.                                                 | Favorites list returns only my favorited products                         |
-| US12 | Shop Owner | As a shop owner, I want to register a shop, so that I can start selling once approved.                                                      | New shop is created with `is_authorized = false` by default               |
-| US13 | Shop Owner | As a shop owner, I want to be blocked from posting products until my shop is authorized, so that only approved sellers appear to customers. | `POST /products` returns 403 if `shop.is_authorized` is false             |
-| US14 | Shop Owner | As a shop owner, I want to add a product with multiple images, so that customers can see it clearly.                                        | Images upload to Cloudinary via the backend; URLs saved in `image_urls`   |
-| US15 | Shop Owner | As a shop owner, I want to edit or delete only my own products, so that I can't affect other shops' listings.                               | PUT/DELETE blocked unless `product.shop_id` belongs to my shop            |
-| US16 | Shop Owner | As a shop owner, I want to view orders containing my products, so that I know what I need to fulfill.                                       | Orders endpoint filters `order_items` by my shop's product ids            |
-| US17 | Admin      | As an admin, I want to view and authorize pending shops, so that only legitimate shops can sell.                                            | `PUT /admin/shops/{id}/authorize` flips `is_authorized` to true           |
-| US18 | Admin      | As an admin, I want to suspend a shop, so that I can remove it from the platform if needed.                                                 | Suspended shop's products stop appearing to customers                     |
-| US19 | Admin      | As an admin, I want to delete any product on the platform, so that I can remove items with a pattern of bad reviews.                        | `DELETE /products/{id}` succeeds for admin regardless of shop ownership   |
-| US20 | Admin      | As an admin, I want to view all shops, products, and orders platform-wide, so that I have full oversight.                                   | Admin-only endpoints return all records, not just the admin's own         |
+- [About the App](#-about-the-app)
+- [Getting Started](#-getting-started)
+- [User Roles](#-user-roles)
+- [User Stories](#-user-stories)
+- [ERD](#️-entity-relationship-diagram-erd)
+- [Wireframes](#️-wireframes)
+- [Features](#-features)
+- [API Routes](#️-api-routes)
+- [Technologies Used](#-technologies-used)
+- [Attributions](#-attributions)
+- [Next Steps](#-next-steps)
 
 ---
 
-## ERD (Entity-Relationship Diagram)
+## 🪄 About the App
+
+**Weasleys' Wizard Wheezes** is a Harry Potter themed e-commerce marketplace where multiple wizarding shop owners sell magical joke-shop products, and customers can browse, buy, review and favorite them. Find wands, trunks, house apparel and magical gifts, all in one enchanted place.
+
+A shop owner registers a shop, which stays **pending** until the platform Admin authorizes it. A shop cannot post products before approval. Once approved, the owner manages their own products (with multiple images uploaded via Cloudinary). Customers browse only authorized shops, add items to a cart, check out through a themed mock **Gringotts** payment flow, track orders through **Owl Post** delivery stages, and leave reviews (optionally with their own photos). The Admin has platform-wide oversight: authorizing or suspending shops, and deleting any product, for example after reviewing a pattern of bad reviews.
+
+### 💡 Why I built it
+
+I built this as my capstone project for the General Assembly software engineering course. I wanted something fun that is also a real, full-stack marketplace: three user roles, role-based permissions enforced on the server, image uploads, and a full purchase flow, all wrapped in a world I love.
+
+---
+
+## 🚀 Getting Started
+
+| Resource                                                          | Link                                                                                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 🌐 **Deployed app**                                               | [weasleys-wizard-frontend.vercel.app](https://weasleys-wizard-frontend.vercel.app)                        |
+| 📋 **Planning materials** (user stories, ERD, wireframes, routes) | [Project Plan PDF](./docs/Weasleys_Wizard_Wheezes_Project_Plan.pdf)                                       |
+| 🧠 **Back-end code**                                              | [`/backend`](./backend)                                                                                   |
+| 🎨 **Front-end code**                                             | [`/frontend`](./frontend)                                                                                 |
+| 🧩 **Architecture diagram**                                       | [GitDiagram](https://gitdiagram.com/eshaabbasi/weasleyswizard_backend?utm_source=readme&utm_medium=badge) |
+
+### Repository structure
+
+```
+WeasleysWizard/
+├── frontend/     React app (deployed on Vercel)
+├── backend/      FastAPI app (deployed on Render)
+├── docs/         Planning materials (project plan PDF)
+├── assets/       Logo and screenshot used in this README
+└── README.md
+```
+
+### Run it locally
+
+**1. Clone the repo**
+
+```bash
+git clone https://github.com/EshaAbbasi/WeasleysWizard.git
+cd WeasleysWizard
+```
+
+**2. Start the back-end** (FastAPI)
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Create `backend/.env` (adjust names to match your code):
+
+```env
+DATABASE_URL=postgresql://user:password@host:5432/postgres   # Supabase connection string
+SECRET_KEY=your-jwt-secret
+ALGORITHM=HS256
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+FRONTEND_URL=http://localhost:5173
+```
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API runs at `http://localhost:8000` and the Swagger docs at `http://localhost:8000/docs`.
+
+**3. Start the front-end** (React), in a second terminal
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000" > .env
+npm run dev
+```
+
+> If your front-end uses Create React App instead of Vite, use `REACT_APP_API_URL` and `npm start`.
+
+---
+
+## 🎭 User Roles
+
+| Role              | What they can do                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 👑 **Admin**      | Authorize or suspend shops, view all shops / products / orders platform-wide, delete any product or review                                       |
+| 🧙 **Shop Owner** | Register a shop (pending approval), add / edit / delete own products once approved (with multiple images), view orders containing own products   |
+| 🛒 **Customer**   | Browse authorized shops and products by category, add to cart, check out, view own order history, write reviews (with images), favorite products |
+
+---
+
+## 📖 User Stories
+
+Full cards with acceptance criteria are in the [planning PDF](./docs/Weasleys_Wizard_Wheezes_Project_Plan.pdf).
+
+### 🛒 Customer
+
+| #    | Story                                                                   | Acceptance criteria                                                      |
+| ---- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| US01 | Register and log in, so I can save a cart, checkout and track my orders | Register/login returns a JWT; guests cannot checkout or review           |
+| US02 | Browse products from authorized shops only                              | Product list excludes shops where `is_authorized` is false               |
+| US03 | Filter products by category                                             | Category filter returns only matching products                           |
+| US04 | View multiple images per product                                        | Product detail displays all URLs in `image_urls`                         |
+| US05 | Add products to a cart with live stock limits                           | Cart blocks quantity above current stock                                 |
+| US06 | Complete a mock checkout                                                | Order + order_items are created; cart clears after success               |
+| US07 | View my order history and status                                        | `GET /orders` returns only the logged-in user's orders                   |
+| US08 | Write a review with a star rating and optional images                   | Review saved with rating, comment and `image_urls`; linked to my user id |
+| US09 | Edit or delete my own review                                            | PUT/DELETE blocked unless `review.user_id` matches the logged-in user    |
+| US10 | Mark a product as a favorite                                            | Favorites list returns only my favorited products                        |
+
+### 🧙 Shop Owner
+
+| #    | Story                                                        | Acceptance criteria                                                     |
+| ---- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| US11 | Register a shop                                              | New shop is created with `is_authorized = false` by default             |
+| US12 | Be blocked from posting products until my shop is authorized | `POST /products` returns 403 if the shop is not authorized              |
+| US13 | Add a product with multiple images                           | Images upload to Cloudinary via the backend; URLs saved in `image_urls` |
+| US14 | Edit or delete only my own products                          | PUT/DELETE blocked unless the product belongs to my shop                |
+| US15 | View orders containing my products                           | Orders endpoint filters order_items by my shop's product ids            |
+
+### 👑 Admin
+
+| #    | Story                                             | Acceptance criteria                                                |
+| ---- | ------------------------------------------------- | ------------------------------------------------------------------ |
+| US16 | View and authorize pending shops                  | `PUT /admin/shops/{id}/authorize` flips `is_authorized` to true    |
+| US17 | Suspend a shop                                    | Suspended shop's products stop appearing to customers              |
+| US18 | Delete any product on the platform                | `DELETE /products/{id}` succeeds for admin regardless of ownership |
+| US19 | View all shops, products and orders platform-wide | Admin-only endpoints return all records                            |
+
+---
+
+## 🗺️ Entity-Relationship Diagram (ERD)
 
 ```mermaid
 erDiagram
-    USERS ||--o{ SHOPS : owns
-    USERS ||--o{ ORDERS : places
-    USERS ||--o{ REVIEWS : writes
-    SHOPS ||--o{ PRODUCTS : lists
+    USERS ||--o{ SHOPS : "owns"
+    USERS ||--o{ ORDERS : "places"
+    USERS ||--o{ REVIEWS : "writes"
+    SHOPS ||--o{ PRODUCTS : "sells"
+    ORDERS ||--o{ ORDER_ITEMS : "contains"
     PRODUCTS ||--o{ ORDER_ITEMS : "appears in"
-    PRODUCTS ||--o{ REVIEWS : receives
-    ORDERS ||--o{ ORDER_ITEMS : contains
+    PRODUCTS ||--o{ REVIEWS : "receives"
 
     USERS {
         int id PK
@@ -74,7 +192,7 @@ erDiagram
         int id PK
         int owner_id FK
         string name
-        string description
+        text description
         bool is_authorized
         string status
     }
@@ -91,7 +209,6 @@ erDiagram
         int id PK
         int user_id FK
         numeric total_gbp
-        string coupon_code
         string status
     }
     ORDER_ITEMS {
@@ -106,260 +223,146 @@ erDiagram
         int user_id FK
         int product_id FK
         int rating
-        string comment
+        text comment
         jsonb image_urls
         bool is_favorite
     }
 ```
 
----
-
-## Wireframes
-
-### 1. Register / Login
-
-```
-┌─────────────────────────────────────┐
-│       Weasleys' Wizard Wheezes       │
-│  ┌─────────────────────────────┐    │
-│  │ Username / Email            │    │
-│  └─────────────────────────────┘    │
-│  ┌─────────────────────────────┐    │
-│  │ Password                    │    │
-│  └─────────────────────────────┘    │
-│  Role: ( ) Customer ( ) Shop Owner   │
-│      [  Create Account  ]            │
-│   Already a wizard? Log in           │
-└─────────────────────────────────────┘
-```
-
-### 2. Browse Shops & Products
-
-```
-┌─────────────────────────────────────┐
-│ Home | Shops | Favorites | Cart      │
-│ [All] [Snackboxes] [Potions] [More]  │
-│ ┌───────┐ ┌───────┐ ┌───────┐        │
-│ │ image │ │ image │ │ image │        │
-│ │ Only 2│ │       │ │       │        │
-│ │ left! │ │       │ │       │        │
-│ │ [View]│ │ [View]│ │ [View]│        │
-│ └───────┘ └───────┘ └───────┘        │
-└─────────────────────────────────────┘
-```
-
-### 3. Product Detail
-
-```
-┌─────────────────────────────────────┐
-│ [img1] [img2] [img3]                 │
-│ Fainting Fancies — £3.50 (7 Sickles) │
-│ [Add to Cart]  [Add to Favorites]    │
-│ Reviews (4.6/5) — with photos        │
-└─────────────────────────────────────┘
-```
-
-### 4. Cart & Checkout
-
-```
-┌─────────────────────────────────────┐
-│ Fainting Fancies x2 ........ £7.00   │
-│ Extendable Ears x1 ......... £4.50   │
-│ Coupon: [DIAGONALLEY] [Apply]        │
-│ Total: 12G 3S (£10.35)               │
-│       [ Gringotts Checkout ]         │
-└─────────────────────────────────────┘
-```
-
-### 5. My Orders
-
-```
-┌─────────────────────────────────────┐
-│ Order #104 — In Transit (Floo)       │
-│ Order #098 — Delivered               │
-│ Order #091 — Owl Post Received       │
-└─────────────────────────────────────┘
-```
-
-### 6. Shop Registration (Shop Owner)
-
-```
-┌─────────────────────────────────────┐
-│ Shop Name:   [______________]        │
-│ Description: [______________]        │
-│       [ Submit for Approval ]        │
-│ Status: Pending admin authorization  │
-└─────────────────────────────────────┘
-```
-
-### 7. Add / Edit Product (Shop Owner)
-
-```
-┌─────────────────────────────────────┐
-│ Product Name   [______________]      │
-│ Category       [ dropdown ▾ ]        │
-│ Price (GBP)    [______________]      │
-│ Stock Quantity [______________]      │
-│ Upload Images  [ choose files... ]   │
-│       [   Save Product   ]           │
-└─────────────────────────────────────┘
-```
-
-### 8. Admin Dashboard
-
-```
-┌─────────────────────────────────────┐
-│ Pending Shop Approvals (2)           │
-│  Zonko's Joke Shop   [Approve][Reject]│
-│  Honeydukes Extras   [Approve][Reject]│
-│ All Shops (6 approved, 1 suspended)  │
-│ All Products (142) — search / delete │
-└─────────────────────────────────────┘
-```
-
-_(Stretch-goal screens — Category Manager and Coupon Manager, both
-Admin-only — follow the same layout pattern as the Admin Dashboard above.)_
+> The cart lives in React state and is written to `orders` / `order_items` at checkout.
 
 ---
 
-## Component Hierarchy (React Frontend)
+## 🖼️ Wireframes
 
-```mermaid
-graph TD
-    App["🪄 App.jsx<br/>(Router + AuthProvider + CartProvider)"]
+The full wireframes are in the [planning PDF](./docs/Weasleys_Wizard_Wheezes_Project_Plan.pdf).
 
-    App --> Navbar["Navbar"]
-    App --> Footer["Footer"]
-    App --> Routes["Routes"]
-    App --> RoleRoute["RoleRoute<br/>(wrapper: blocks route by role)"]
+| #   | Screen                                                         | Role       |
+| --- | -------------------------------------------------------------- | ---------- |
+| 1   | Register / Login                                               | Everyone   |
+| 2   | Browse Shops & Products (category filter)                      | Customer   |
+| 3   | Product Detail (image gallery + "Owls from customers" reviews) | Customer   |
+| 4   | Cart & Gringotts Checkout                                      | Customer   |
+| 5   | My Orders (Owl Post tracking)                                  | Customer   |
+| 6   | Favorites                                                      | Customer   |
+| 7   | Shop Registration (pending approval)                           | Shop Owner |
+| 8   | Add / Edit Product (multi-image upload)                        | Shop Owner |
+| 9   | Shop Owner Dashboard                                           | Shop Owner |
+| 10  | Admin Dashboard (authorize shops, delete products)             | Admin      |
+| 11  | Admin: Product Moderation                                      | Admin      |
 
-    Routes --> Login["Login"]
-    Routes --> Register["Register"]
+**Navigation flow**
 
-    Routes --> ProductList["ProductList<br/>(Home / Browse)"]
-    ProductList --> CategoryFilter["CategoryFilter"]
-    ProductList --> ProductCard1["ProductCard<br/>(repeated per product)"]
+- **Customer:** Register/Login → Browse → Product Detail → Cart → Checkout → My Orders
+- **Shop Owner:** Shop Registration → (pending) → Dashboard → Add/Edit Product
+- **Admin:** Admin Dashboard → Authorize Shops / Moderate Products
 
-    Routes --> ProductDetail["ProductDetail"]
-    ProductDetail --> ImageGallery["ImageGallery"]
-    ProductDetail --> AddToCartBtn["AddToCartButton"]
-    ProductDetail --> FavoriteBtn["FavoriteButton"]
-    ProductDetail --> ReviewList["ReviewList"]
-    ReviewList --> ReviewCard["ReviewCard<br/>(repeated per review)"]
-    ProductDetail --> ReviewForm["ReviewForm<br/>(rating + comment + images)"]
+---
 
-    Routes --> Cart["Cart"]
-    Cart --> CartItem["CartItem<br/>(repeated per item)"]
-    Cart --> CouponForm["CouponForm"]
-    Cart --> CheckoutBtn["CheckoutButton"]
+## ✨ Features
 
-    Routes --> Checkout["Checkout<br/>(Gringotts mock payment)"]
+- 🔐 JWT authentication with three roles and protected routes (`RoleRoute`)
+- 🏪 Multi-vendor marketplace: only approved shops are visible to customers
+- 🖼️ Multiple images per product and per review, uploaded through the backend to Cloudinary
+- 🛍️ Cart with live stock limits and a themed Gringotts checkout
+- 🦉 Order tracking: _Owl Post Received → In Transit via Floo Network → Delivered_
+- ⭐ Reviews with star ratings and photos, plus favorites
+- 💰 Prices shown in Galleons, Sickles and Knuts alongside GBP
+- 🚫 "Banned at Hogwarts!" badge on mischief products
+- 🛡️ Admin moderation tools
 
-    Routes --> MyOrders["MyOrders"]
-    MyOrders --> OrderCard["OrderCard<br/>(repeated, shows status)"]
+---
 
-    Routes --> Favorites["Favorites"]
-    Favorites --> ProductCard2["ProductCard<br/>(reused component)"]
+## 🛣️ API Routes
 
-    Routes --> ShopRegister["ShopRegistration"]
+Interactive docs are available at `/docs` (Swagger UI) when the back-end is running. Role checks are enforced server-side.
 
-    Routes --> ShopDashboard["ShopDashboard"]
-    ShopDashboard --> MyProductsTable["MyProductsTable"]
-    ShopDashboard --> ShopOrdersList["ShopOrdersList"]
+| Method | Route                         | Purpose                                                 | Access                         |
+| ------ | ----------------------------- | ------------------------------------------------------- | ------------------------------ |
+| POST   | `/auth/register`              | Sign up (choose role)                                   | Public                         |
+| POST   | `/auth/login`                 | Sign in, returns JWT                                    | Public                         |
+| GET    | `/me`                         | Current user profile                                    | Logged in                      |
+| POST   | `/shops`                      | Register a new shop                                     | Shop Owner                     |
+| GET    | `/shops/mine`                 | View my shop                                            | Shop Owner                     |
+| GET    | `/shops`                      | List authorized shops                                   | Public                         |
+| GET    | `/admin/shops`                | List all shops incl. pending                            | Admin                          |
+| PUT    | `/admin/shops/{id}/authorize` | Approve / suspend a shop                                | Admin                          |
+| POST   | `/upload-image`               | Upload one image to Cloudinary, return URL              | Shop Owner / Customer          |
+| GET    | `/products`                   | List / search / filter products (authorized shops only) | Public                         |
+| GET    | `/products/{id}`              | Product detail incl. images + reviews                   | Public                         |
+| POST   | `/products`                   | Add product (blocked if shop not authorized)            | Shop Owner                     |
+| PUT    | `/products/{id}`              | Edit own product                                        | Shop Owner (own)               |
+| DELETE | `/products/{id}`              | Delete product                                          | Shop Owner (own) / Admin (any) |
+| GET    | `/admin/products`             | List all products platform-wide                         | Admin                          |
+| POST   | `/orders`                     | Checkout (creates order + order_items)                  | Customer                       |
+| GET    | `/orders`                     | My order history                                        | Customer (own)                 |
+| GET    | `/shops/{id}/orders`          | Orders containing my shop's products                    | Shop Owner                     |
+| GET    | `/admin/orders`               | All orders platform-wide                                | Admin                          |
+| POST   | `/reviews`                    | Add review (rating, comment, optional images)           | Customer                       |
+| GET    | `/reviews/{product_id}`       | List reviews for a product                              | Public                         |
+| PUT    | `/reviews/{id}`               | Edit own review                                         | Customer (own)                 |
+| DELETE | `/reviews/{id}`               | Delete review                                           | Customer (own) / Admin (any)   |
+| GET    | `/favorites`                  | List my favorited products                              | Customer                       |
 
-    Routes --> AddEditProduct["AddEditProduct"]
-    AddEditProduct --> ImageUploader["ImageUploader<br/>(Cloudinary)"]
+---
 
-    Routes --> AdminDashboard["AdminDashboard"]
-    AdminDashboard --> ShopApprovalList["ShopApprovalList<br/>(approve/suspend)"]
-    AdminDashboard --> AllProductsTable["AllProductsTable<br/>(moderate/delete any)"]
-    AdminDashboard --> AllOrdersTable["AllOrdersTable"]
+## 🧰 Technologies Used
 
-    %% ===== Color classes =====
-    classDef core fill:#3b2a5c,color:#ffffff,stroke:#2a1d42,stroke-width:1px;
-    classDef shared fill:#5b7fb5,color:#ffffff,stroke:#3f5f8f,stroke-width:1px;
-    classDef customer fill:#2f8f5b,color:#ffffff,stroke:#1f6b41,stroke-width:1px;
-    classDef shopowner fill:#c9962c,color:#ffffff,stroke:#9c7220,stroke-width:1px;
-    classDef admin fill:#a13d3d,color:#ffffff,stroke:#7a2d2d,stroke-width:1px;
-    classDef reused fill:#2b8c8c,color:#ffffff,stroke:#1e6666,stroke-width:1px;
+| Layer                 | Technology                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| **Front-end**         | JavaScript, React, React Router, Context API (Auth + Cart)                                 |
+| **Back-end**          | Python, **FastAPI**, SQLAlchemy, JWT authentication, bcrypt                                |
+| **Database**          | **PostgreSQL** hosted on **Supabase**                                                      |
+| **Image storage**     | Cloudinary (uploads handled by the backend only; the API secret is never exposed to React) |
+| **Front-end hosting** | **Vercel**                                                                                 |
+| **Back-end hosting**  | **Render**                                                                                 |
+| **Tools**             | Git & GitHub, VS Code, Swagger UI, GitDiagram                                              |
 
-    class App,Routes,RoleRoute core;
-    class Navbar,Footer,Login,Register shared;
-    class ProductList,CategoryFilter,ProductDetail,ImageGallery,AddToCartBtn,FavoriteBtn,ReviewList,ReviewCard,ReviewForm,Cart,CartItem,CouponForm,CheckoutBtn,Checkout,MyOrders,OrderCard,Favorites customer;
-    class ShopRegister,ShopDashboard,MyProductsTable,ShopOrdersList,AddEditProduct,ImageUploader shopowner;
-    class AdminDashboard,ShopApprovalList,AllProductsTable,AllOrdersTable admin;
-    class ProductCard1,ProductCard2 reused;
+### Code layout
+
+```
+backend/app/
+├── main.py  models.py  schemas.py  database.py  auth.py  dependencies.py
+├── cloudinary_config.py
+└── routers/   auth, shops, products, orders, reviews, uploads, admin
+
+frontend/src/
+├── pages/        Login, Register, Shops, ProductList, ProductDetail, Cart, Checkout,
+│                 MyOrders, Favorites, ShopDashboard, AddEditProduct, AdminDashboard
+├── components/   Navbar, ProductCard, ReviewCard, ImageUploader, RoleRoute
+└── context/      AuthContext, CartContext
 ```
 
-**Color key:** 🟣 Purple = core app shell · 🔵 Blue = shared/public pages · 🟢 Green = Customer-only pages · 🟡 Gold = Shop Owner-only pages · 🔴 Red = Admin-only pages · 🟦 Teal = reused component (same component, multiple places)
+---
 
-### Shared context / state (not rendered components, but wrap the tree)
+## 🙏 Attributions
 
-| Context       | Purpose                                                                            | Used by                                                           |
-| ------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `AuthContext` | Stores logged-in user, JWT token, role; provides login/logout functions            | Navbar, RoleRoute, every page that needs `user.role` or `user.id` |
-| `CartContext` | Stores cart items in memory (not a DB table), provides add/remove/update functions | ProductDetail (Add to Cart), Cart, Checkout                       |
-
-### Reused components
-
-- `ProductCard` is used in both `ProductList` and `Favorites` — same component, different data source
-- `RoleRoute` wraps `ShopRegistration`, `ShopDashboard`, `AddEditProduct` (Shop Owner only) and `AdminDashboard` (Admin only), redirecting anyone without the right role
+- **Images:** product imagery from [Harry Potter Shop UK](https://harrypottershop.co.uk/?srsltid=AU7gw4VgNUOurTL9umt7DcG6yQ4KHKopZeIMmFdqht91SLSrOE8O2e6sand)
+- **Music:** magical background music from [Free To Use Music](https://freetouse.com/music/search/magic)
+- **Architecture diagram:** generated with [GitDiagram](https://gitdiagram.com/eshaabbasi/weasleyswizard_backend?utm_source=readme&utm_medium=badge)
+- **Harry Potter** characters, names and the wizarding world are created by J.K. Rowling. This is a fan-made, non-commercial educational project and is not affiliated with or endorsed by Warner Bros., J.K. Rowling or any rights holders. Product descriptions were written by me.
 
 ---
 
-## API Routes
+## 🔮 Next Steps
 
-All routes except register/login require a JWT in the `Authorization`
-header. Role checks are enforced server-side.
+Planned future enhancements:
 
-| Method | Route                         | Purpose                                             | Access                         |
-| ------ | ----------------------------- | --------------------------------------------------- | ------------------------------ |
-| POST   | `/auth/register`              | Sign up (choose role)                               | Public                         |
-| POST   | `/auth/login`                 | Sign in, returns JWT                                | Public                         |
-| GET    | `/me`                         | Current user profile                                | Logged in                      |
-| POST   | `/shops`                      | Register a new shop                                 | Shop Owner                     |
-| GET    | `/shops/mine`                 | View my shop                                        | Shop Owner                     |
-| GET    | `/shops`                      | List authorized shops                               | Public                         |
-| GET    | `/admin/shops`                | List all shops incl. pending                        | Admin                          |
-| PUT    | `/admin/shops/{id}/authorize` | Approve/suspend a shop                              | Admin                          |
-| POST   | `/upload-image`               | Upload one image to Cloudinary, return URL          | Shop Owner / Customer          |
-| GET    | `/products`                   | List/search/filter products (authorized shops only) | Public                         |
-| GET    | `/products/{id}`              | Product detail incl. images + reviews               | Public                         |
-| POST   | `/products`                   | Add product (blocked if shop not authorized)        | Shop Owner                     |
-| PUT    | `/products/{id}`              | Edit own product                                    | Shop Owner (own)               |
-| DELETE | `/products/{id}`              | Delete product                                      | Shop Owner (own) / Admin (any) |
-| GET    | `/admin/products`             | List all products platform-wide                     | Admin                          |
-| POST   | `/orders`                     | Checkout (creates order + order_items)              | Customer                       |
-| GET    | `/orders`                     | My order history                                    | Customer (own)                 |
-| GET    | `/shops/{id}/orders`          | Orders containing my shop's products                | Shop Owner                     |
-| GET    | `/admin/orders`               | All orders platform-wide                            | Admin                          |
-| POST   | `/reviews`                    | Add review (rating, comment, optional images)       | Customer                       |
-| GET    | `/reviews/{product_id}`       | List reviews for a product                          | Public                         |
-| PUT    | `/reviews/{id}`               | Edit own review                                     | Customer (own)                 |
-| DELETE | `/reviews/{id}`               | Delete review                                       | Customer (own) / Admin (any)   |
-| GET    | `/favorites`                  | List my favorited products                          | Customer                       |
-| POST   | `/coupons/validate`           | Check a coupon code                                 | Customer                       |
+- 🗂️ **Categories table:** replace the fixed category list with admin-managed, relational categories
+- 🎟️ **Coupons:** admin-managed discount codes with activation and expiry dates
+- 💳 **Real payments:** replace the mock Gringotts checkout with Stripe
+- 📧 **Notifications:** email updates when an order status changes or a shop is approved
+- 🔎 **Search and pagination:** faster product discovery with search, sorting and paging
+- 📊 **Shop analytics:** sales and stock insights for shop owners
+- 🚩 **Review flagging:** let users report reviews for admin moderation
+- 🌗 **Accessibility and mobile polish:** further responsive and a11y improvements
 
 ---
 
-## Technologies Used
+<div align="center">
 
-- **Frontend:** React, React Router, Axios, CSS (Flexbox/Grid)
-- **Backend:** Python, FastAPI, SQLAlchemy, JWT (python-jose), Passlib (bcrypt)
-- **Database:** PostgreSQL
-- **Image hosting:** Cloudinary
-- **Deployment:** Vercel (frontend), Render (backend)
+**Made with ✨ and a little bit of magic by [Esha Abbasi](https://github.com/EshaAbbasi)**
 
-## Attributions
+_"Mischief managed."_
 
-Product names and categories are inspired by J.K. Rowling's Harry Potter
-series (Weasleys' Wizard Wheezes); all product descriptions, images, and
-code in this project are original. No official movie stills, logos, or book
-text are used.
-
-## Next Steps (Stretch Goals)
-
-- Move `categories` into a proper relational table managed by the Admin
-- Move `coupons` into an admin-managed table with activation/expiry dates
-- Real payment integration (Stripe test mode) instead of a mock checkout
-- Email notifications when an order status changes
+</div>

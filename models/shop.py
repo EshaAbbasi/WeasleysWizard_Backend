@@ -12,10 +12,9 @@ class ShopModel(BaseModel):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
 
-    # Single source of truth for approval state — "pending" until an
-    # admin approves it, "suspended" if an admin removes it later.
+    # A rejected shop is declined before approval; suspended shops were previously approved.
     status = Column(
-        Enum('pending', 'approved', 'suspended', name='shop_status'),
+        Enum('pending', 'approved', 'suspended', 'rejected', name='shop_status'),
         default='pending'
     )
 
