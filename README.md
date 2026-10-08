@@ -1,4 +1,8 @@
+<div align="center">
+
 # ⚡ Weasleys' Wizard Wheezes ⚡
+
+<img src="assets/logo.PNG" alt="Weasleys' Wizard Wheezes logo" width="200" />
 
 ### _A Harry Potter themed e-commerce marketplace — for every Harry Potter fan._
 
